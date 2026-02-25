@@ -31,6 +31,23 @@ python main.py --num-games 10 --models anthropic/claude-sonnet-4-20250514 openai
 - `logs/` — Full game logs in JSON (gitignored)
 - `tests/` — Unit and integration tests
 
+## V1 Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **Storyteller** | Automated/deterministic | Simpler, more controlled, reproducible |
+| **Communication** | All public (no private whispers) | Simpler logging; matches Among Us paper; add private in v2 |
+| **Player count** | 7 players | Matches Among Us paper setup |
+| **Characters** | Subset of ~10 (not all 22) | Core mechanics without edge cases |
+| **Character set** | 5 Townsfolk, 1 Poisoner, 1 Imp | Info-gathering + misinformation + killing |
+| **Day structure** | Structured rounds (2-3 turns per player) | Reproducibility, clean logging |
+| **Scratchpad/Thinking** | Required `[Thinking Process]` block | Essential for deception analysis |
+| **Misinformation** | Semi-random plausible false info | Balance realism and simplicity |
+| **LLM routing** | Martian Gateway API | OpenAI-compatible |
+| **Models** | Start with 2-3 | Validate system before scaling |
+| **Metrics** | Deception Elo, Detection Elo, win rates | Match Among Us paper methodology |
+| **Evaluation** | LLM-based scoring (lying, deception, awareness, planning) | Match Among Us paper methodology |
+
 ## V1 Scope
 
 - 7 players, Trouble Brewing edition
