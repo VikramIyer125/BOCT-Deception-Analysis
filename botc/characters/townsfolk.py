@@ -77,6 +77,7 @@ class Washerwoman(BaseCharacter):
             game_state.day_number, self.name, desc,
             shown_players=[pair[0].id, pair[1].id],
             shown_character=target.character_name,
+            ground_truth={"info_accurate": True},
         )
         return game_state, info
 
@@ -99,6 +100,7 @@ def _poisoned_washerwoman(
         shown_players=[p.id for p in pair],
         shown_character=fake_char,
         poisoned=True,
+        ground_truth={"info_accurate": False},
     )
     return game_state, info
 
@@ -151,6 +153,7 @@ class Investigator(BaseCharacter):
             game_state.day_number, self.name, desc,
             shown_players=[pair[0].id, pair[1].id],
             shown_character=target.character_name,
+            ground_truth={"info_accurate": True},
         )
         return game_state, info
 
@@ -170,6 +173,7 @@ def _poisoned_investigator(
         shown_players=[p.id for p in pair],
         shown_character=fake_char,
         poisoned=True,
+        ground_truth={"info_accurate": False},
     )
     return game_state, info
 
@@ -201,10 +205,11 @@ class Empath(BaseCharacter):
     ) -> Tuple["GameState", Optional["AbilityInfo"]]:
         is_poisoned = game_state.poisoned_player == player.id
         left, right = game_state.get_neighbors(player.id)
-        evil_count = sum(1 for n in (left, right) if n.alignment == "evil")
+        true_evil_count = sum(1 for n in (left, right) if n.alignment == "evil")
+        evil_count = true_evil_count
 
         if is_poisoned:
-            evil_count = random.choice([c for c in range(3) if c != evil_count])
+            evil_count = random.choice([c for c in range(3) if c != true_evil_count])
 
         desc = f"{evil_count} of your alive neighbours are evil."
         info = _make_info(
@@ -212,6 +217,10 @@ class Empath(BaseCharacter):
             evil_neighbour_count=evil_count,
             neighbours=[left.id, right.id],
             poisoned=is_poisoned,
+            ground_truth={
+                "true_evil_count": true_evil_count,
+                "info_accurate": evil_count == true_evil_count,
+            },
         )
         return game_state, info
 
@@ -290,6 +299,12 @@ class FortuneTeller(BaseCharacter):
             targets=target_ids,
             result=result,
             poisoned=is_poisoned,
+            ground_truth={
+                "demon_actually_present": demons_present,
+                "red_herring_triggered": herring_present and not demons_present,
+                "red_herring_id": self.red_herring_id,
+                "info_accurate": result == demons_present,
+            },
         )
         return game_state, info
 
@@ -446,12 +461,20 @@ class Ravenkeeper(BaseCharacter):
             info = _make_info(
                 game_state.day_number, self.name, desc,
                 target=target_id, shown_character=fake_char, poisoned=True,
+                ground_truth={
+                    "true_character": target.character_name,
+                    "info_accurate": fake_char == target.character_name,
+                },
             )
         else:
             desc = f"You learned that {target.name} is the {target.character_name}."
             info = _make_info(
                 game_state.day_number, self.name, desc,
                 target=target_id, shown_character=target.character_name,
+                ground_truth={
+                    "true_character": target.character_name,
+                    "info_accurate": True,
+                },
             )
         return game_state, info
 

@@ -38,7 +38,7 @@ def setup_game(
     for i, pid in enumerate(player_ids):
         char_name = all_chars[i]
         char_cls = CHARACTER_REGISTRY[char_name]
-        alignment = char_cls.alignment
+        alignment = "good" if char_cls.character_type in (CharacterType.TOWNSFOLK, CharacterType.OUTSIDER) else "evil"
         players.append(
             Player(
                 id=pid,

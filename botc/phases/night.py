@@ -9,7 +9,7 @@ from botc.characters.base import CharacterType
 from botc.phases.storyteller import get_night_action_order
 
 if TYPE_CHECKING:
-    from botc.game_state import GameState
+    from botc.game_state import AbilityInfo, GameState
 
 
 def run_first_night(
@@ -42,6 +42,7 @@ def run_first_night(
         game_state, info = char.resolve_night_action(game_state, player, action_dict)
         if info:
             player.received_info.append(info)
+            _backfill_result(game_state, player.id, prompt, info)
 
     return game_state
 
@@ -82,5 +83,25 @@ def run_night_phase(
         game_state, info = char.resolve_night_action(game_state, player, action_dict)
         if info:
             player.received_info.append(info)
+            _backfill_result(game_state, player.id, prompt, info)
 
     return game_state
+
+
+def _backfill_result(
+    game_state: "GameState",
+    player_id: str,
+    prompt: str | None,
+    info: "AbilityInfo",
+) -> None:
+    """Write ability result back into the log entry for this action."""
+    info_dict = info.model_dump()
+    if prompt is not None and game_state.game_log:
+        game_state.game_log[-1].result = info_dict
+    else:
+        game_state.add_log(
+            player_id=player_id,
+            phase="night_info",
+            observation={"ability": info.source_character},
+            result=info_dict,
+        )

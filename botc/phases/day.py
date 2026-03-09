@@ -49,7 +49,7 @@ def run_day_phase(
                         player_id=player.id,
                         content=speech,
                         phase=f"day_{game_state.day_number}_round_{round_num + 1}",
-                        timestamp=game_state.next_turn(),
+                        timestamp=game_state.turn_counter,
                     )
                 )
 
@@ -74,7 +74,7 @@ def run_day_phase(
                     player_id=player.id,
                     content=speech,
                     phase=f"day_{game_state.day_number}_dead_speech",
-                    timestamp=game_state.next_turn(),
+                    timestamp=game_state.turn_counter,
                 )
             )
 
@@ -229,7 +229,7 @@ def _resolve_slay(
                 player_id="storyteller",
                 content=f"{slayer_player.name} used the Slayer ability on {game_state.get_player(target_id).name}. They were the Demon! They die!",
                 phase=f"day_{game_state.day_number}_slay",
-                timestamp=game_state.next_turn(),
+                timestamp=game_state.turn_counter,
             )
         )
     else:
@@ -238,7 +238,7 @@ def _resolve_slay(
                 player_id="storyteller",
                 content=f"{slayer_player.name} used the Slayer ability on {game_state.get_player(target_id).name}. Nothing happens.",
                 phase=f"day_{game_state.day_number}_slay",
-                timestamp=game_state.next_turn(),
+                timestamp=game_state.turn_counter,
             )
         )
     return game_state

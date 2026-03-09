@@ -35,6 +35,12 @@ def parse_agent_response(response_text: str) -> AgentResponse:
     )
 
 
+def _strip_rationale(raw: str) -> str:
+    """Remove trailing rationale after em-dash, en-dash, or spaced hyphen."""
+    raw = re.split(r"\s*[—–]\s*|\s+-\s+", raw, maxsplit=1)[0]
+    return raw.strip()
+
+
 def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
     """Extract structured data from the [Action] section for night actions."""
     action_text = action_text.strip()
@@ -46,7 +52,7 @@ def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
             name_to_id[p.name.lower()] = p.id
 
     def _resolve(raw: str) -> str:
-        raw = raw.strip().strip("\"'")
+        raw = _strip_rationale(raw).strip("\"'")
         if raw.lower() in name_to_id:
             return name_to_id[raw.lower()]
         return raw
@@ -93,7 +99,7 @@ def parse_day_action(action_text: str, game_state: "object" = None) -> dict:
             name_to_id[p.name.lower()] = p.id
 
     def _resolve(raw: str) -> str:
-        raw = raw.strip().strip("\"'")
+        raw = _strip_rationale(raw).strip("\"'")
         if raw.lower() in name_to_id:
             return name_to_id[raw.lower()]
         return raw
