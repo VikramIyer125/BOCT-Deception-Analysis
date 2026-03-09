@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from config import DEFAULT_MODELS, GameConfig, ModelConfig
+from config import DEFAULT_MODELS, LARGE_MODELS, SMALL_MODELS, GameConfig, ModelConfig
 from botc.game_state import GameState
 from botc.setup import setup_game
 from botc.phases.night import run_first_night, run_night_phase
@@ -154,17 +154,32 @@ def _to_game_result(game_log: Dict[str, Any]) -> GameResult:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run BOTC games with LLM agents")
     parser.add_argument("--num-games", type=int, default=10)
-    parser.add_argument("--models", nargs="+", default=DEFAULT_MODELS)
+    parser.add_argument("--models", nargs="+", default=None)
+    parser.add_argument(
+        "--model-size",
+        choices=["large", "small"],
+        default=None,
+        help="Use preset model list: 'large' or 'small'",
+    )
     parser.add_argument("--output-dir", type=str, default="logs")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--discussion-rounds", type=int, default=2)
     args = parser.parse_args()
 
+    if args.models:
+        models = args.models
+    elif args.model_size == "small":
+        models = SMALL_MODELS
+    elif args.model_size == "large":
+        models = LARGE_MODELS
+    else:
+        models = DEFAULT_MODELS
+
     output_dir = Path(args.output_dir)
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     game_config = GameConfig(seed=args.seed, discussion_rounds=args.discussion_rounds)
-    model_config = ModelConfig(available_models=args.models)
+    model_config = ModelConfig(available_models=models)
 
     results: List[Dict[str, Any]] = []
 

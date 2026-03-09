@@ -30,6 +30,11 @@ class MartianClient:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
 
+    _MAX_COMPLETION_TOKENS_MODELS = ("openai/gpt-5", "openai/o3", "openai/o4")
+
+    def _uses_max_completion_tokens(self) -> bool:
+        return any(self.model.startswith(p) for p in self._MAX_COMPLETION_TOKENS_MODELS)
+
     def get_completion(
         self,
         system_prompt: str,
@@ -39,6 +44,11 @@ class MartianClient:
     ) -> str:
         for attempt in range(self.max_retries):
             try:
+                token_param = (
+                    {"max_completion_tokens": max_tokens}
+                    if self._uses_max_completion_tokens()
+                    else {"max_tokens": max_tokens}
+                )
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
@@ -46,7 +56,7 @@ class MartianClient:
                         {"role": "user", "content": user_prompt},
                     ],
                     temperature=temperature,
-                    max_tokens=max_tokens,
+                    **token_param,
                 )
                 return response.choices[0].message.content or ""
             except Exception:

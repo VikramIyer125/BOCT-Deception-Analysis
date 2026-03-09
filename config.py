@@ -17,11 +17,21 @@ DEFAULT_OUTSIDERS: list[str] = []
 DEFAULT_MINIONS = ["Poisoner"]
 DEFAULT_DEMONS = ["Imp"]
 
-DEFAULT_MODELS = [
-    "anthropic/claude-sonnet-4-20250514",
-    "openai/gpt-4o",
-    "meta-llama/llama-3.3-70b-instruct",
+LARGE_MODELS = [
+    "anthropic/claude-opus-4-6",
+    "openai/gpt-5.4",
+    "google/gemini-3.1-pro-preview",
+    "deepseek/deepseek-v3.2",
 ]
+
+SMALL_MODELS = [
+    "anthropic/claude-haiku-4-5-20251001",
+    "openai/gpt-4.1-nano",
+    "google/gemini-2.5-flash-lite",
+    "deepseek/deepseek-r1-distill-qwen-32b",
+]
+
+DEFAULT_MODELS = LARGE_MODELS
 
 PLAYER_COUNT_TABLE = {
     #  players: (townsfolk, outsiders, minions, demons)
