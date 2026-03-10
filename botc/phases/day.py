@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 from botc.characters import CHARACTER_REGISTRY
 from botc.characters.townsfolk import Slayer
 from botc.game_state import Message, Nomination
+from botc.utils import NumberedTargets
 
 if TYPE_CHECKING:
     from botc.game_state import GameState
@@ -31,7 +32,7 @@ def run_day_phase(
             if not player.alive:
                 continue
 
-            day_actions = _get_day_actions(game_state, player)
+            day_actions, day_numbered = _get_day_actions(game_state, player)
             action_lines = ["SPEAK: <your message to the group>"]
             action_lines.extend(day_actions)
 
@@ -40,6 +41,7 @@ def run_day_phase(
                 game_state,
                 f"day_{game_state.day_number}_discussion_round_{round_num + 1}",
                 action_lines,
+                day_numbered,
             )
 
             speech = action_dict.get("speech", "")
@@ -66,6 +68,7 @@ def run_day_phase(
             game_state,
             f"day_{game_state.day_number}_dead_speech",
             ["SPEAK: <your message to the group> (you are dead but may still speak)"],
+            None,
         )
         speech = action_dict.get("speech", "")
         if speech:
@@ -112,16 +115,17 @@ def _run_nominations(
         if not eligible:
             continue
 
-        eligible_names = [p.name for p in eligible]
+        numbered = NumberedTargets.from_players(eligible)
         action_dict = get_agent_action(
             player.id,
             game_state,
             f"day_{game_state.day_number}_nomination",
             [
-                "NOMINATE: <player> — Nominate a player for execution.",
+                "NOMINATE: <number> — Nominate a player for execution.",
                 "PASS — Do not nominate anyone.",
-                f"Eligible targets: {', '.join(eligible_names)}",
+                f"{numbered.prompt_lines}",
             ],
+            numbered,
         )
 
         nominee_id = action_dict.get("nominate")
@@ -164,6 +168,7 @@ def _run_voting(
                     "YES — Vote to execute.",
                     "NO — Vote against execution.",
                 ],
+                None,
             )
 
             vote = action_dict.get("vote", False)
@@ -247,11 +252,11 @@ def _resolve_slay(
 # ── Helpers ──────────────────────────────────────────────────────
 
 
-def _get_day_actions(game_state: "GameState", player: "Player") -> list[str]:
+def _get_day_actions(game_state: "GameState", player: "Player") -> tuple[list[str], Optional[NumberedTargets]]:
     from botc.game_state import Player
 
     char_cls = CHARACTER_REGISTRY.get(player.character_name)
     if char_cls is None:
-        return []
+        return [], None
     char = char_cls()
     return char.get_day_actions(game_state, player)

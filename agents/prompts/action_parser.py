@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from botc.utils import NumberedTargets
 
 
 @dataclass
@@ -48,7 +52,27 @@ def _clean_name(raw: str) -> str:
     return raw
 
 
-def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
+def _resolve_target(
+    raw: str,
+    name_to_id: dict[str, str],
+    numbered_targets: Optional["NumberedTargets"] = None,
+) -> str:
+    """Resolve raw text to player ID. Tries number first, then name."""
+    raw = _clean_name(_strip_rationale(raw).strip("\"'"))
+    if numbered_targets and raw.isdigit():
+        idx = int(raw)
+        if idx in numbered_targets.id_map:
+            return numbered_targets.id_map[idx]
+    if raw.lower() in name_to_id:
+        return name_to_id[raw.lower()]
+    return raw
+
+
+def parse_night_action(
+    action_text: str,
+    game_state: "object" = None,
+    numbered_targets: Optional["NumberedTargets"] = None,
+) -> dict:
     """Extract structured data from the [Action] section for night actions."""
     action_text = action_text.strip()
     result: dict = {}
@@ -59,10 +83,7 @@ def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
             name_to_id[p.name.lower()] = p.id
 
     def _resolve(raw: str) -> str:
-        raw = _clean_name(_strip_rationale(raw).strip("\"'"))
-        if raw.lower() in name_to_id:
-            return name_to_id[raw.lower()]
-        return raw
+        return _resolve_target(raw, name_to_id, numbered_targets)
 
     patterns = [
         (r"(?:KILL|POISON|MONK|RAVENKEEPER):\s*(.+)", "target"),
@@ -96,7 +117,11 @@ def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
     return result
 
 
-def parse_day_action(action_text: str, game_state: "object" = None) -> dict:
+def parse_day_action(
+    action_text: str,
+    game_state: "object" = None,
+    numbered_targets: Optional["NumberedTargets"] = None,
+) -> dict:
     """Extract structured data from the [Action] section for day actions."""
     result: dict = {}
 
@@ -106,10 +131,7 @@ def parse_day_action(action_text: str, game_state: "object" = None) -> dict:
             name_to_id[p.name.lower()] = p.id
 
     def _resolve(raw: str) -> str:
-        raw = _clean_name(_strip_rationale(raw).strip("\"'"))
-        if raw.lower() in name_to_id:
-            return name_to_id[raw.lower()]
-        return raw
+        return _resolve_target(raw, name_to_id, numbered_targets)
 
     slay_match = re.search(r"SLAY:\s*(.+)", action_text, re.IGNORECASE)
     if slay_match:

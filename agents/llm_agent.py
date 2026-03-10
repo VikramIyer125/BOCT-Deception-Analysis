@@ -33,6 +33,7 @@ class LLMAgent(BaseAgent):
         game_state: "GameState",
         action_context: str,
         available_actions: List[str],
+        numbered_targets: Any = None,
     ) -> Dict[str, Any]:
         player = game_state.get_player(self.player_id)
 
@@ -56,9 +57,13 @@ class LLMAgent(BaseAgent):
             self.condensed_memory = parsed.condensed_memory
 
         if "night" in action_context.lower():
-            action_fields = parse_night_action(parsed.action, game_state)
+            action_fields = parse_night_action(
+                parsed.action, game_state, numbered_targets
+            )
         else:
-            action_fields = parse_day_action(parsed.action, game_state)
+            action_fields = parse_day_action(
+                parsed.action, game_state, numbered_targets
+            )
 
         game_state.add_log(
             player_id=self.player_id,

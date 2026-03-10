@@ -77,7 +77,7 @@ class TestFirstNight:
         random.seed(42)
         gs = _make_state()
 
-        def mock_agent(pid, gs, ctx, actions):
+        def mock_agent(pid, gs, ctx, actions, numbered_targets=None):
             return {"target": "p0"}
 
         gs = run_first_night(gs, mock_agent)

@@ -4,6 +4,7 @@ import random
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from botc.characters.base import BaseCharacter, CharacterType, register_character
+from botc.utils import NumberedTargets
 
 if TYPE_CHECKING:
     from botc.game_state import AbilityInfo, GameState, Player
@@ -244,12 +245,14 @@ class FortuneTeller(BaseCharacter):
 
     def get_night_action_prompt(
         self, game_state: "GameState", player: "Player"
-    ) -> Optional[str]:
-        alive_names = [p.name for p in game_state.players if p.alive]
+    ) -> Optional[Tuple[str, NumberedTargets]]:
+        alive = [p for p in game_state.players if p.alive]
+        numbered = NumberedTargets.from_players(alive)
         return (
             "Choose 2 players to learn if either is the Demon.\n"
-            f"Alive players: {', '.join(alive_names)}\n"
-            "FORMAT: FORTUNE_TELLER: <player1>, <player2>"
+            f"{numbered.prompt_lines}\n"
+            "FORMAT: FORTUNE_TELLER: <number1>, <number2>",
+            numbered,
         )
 
     def resolve_night_action(
@@ -326,14 +329,16 @@ class Monk(BaseCharacter):
 
     def get_night_action_prompt(
         self, game_state: "GameState", player: "Player"
-    ) -> Optional[str]:
+    ) -> Optional[Tuple[str, NumberedTargets]]:
         if game_state.day_number == 0:
             return None
-        others = [p.name for p in _alive_other_players(game_state, player)]
+        others = list(_alive_other_players(game_state, player))
+        numbered = NumberedTargets.from_players(others)
         return (
             "Choose a player (not yourself) to protect from the Demon tonight.\n"
-            f"Alive players (excluding you): {', '.join(others)}\n"
-            "FORMAT: MONK: <player>"
+            f"{numbered.prompt_lines}\n"
+            "FORMAT: MONK: <number>",
+            numbered,
         )
 
     def resolve_night_action(
@@ -345,7 +350,13 @@ class Monk(BaseCharacter):
         target_id = action.get("target")
         is_poisoned = game_state.poisoned_player == player.id
 
-        if target_id and not is_poisoned:
+        if (
+            target_id
+            and str(target_id).strip().lower() not in (
+                "none", "null", "pass", "no one", "nobody", "n/a",
+            )
+            and not is_poisoned
+        ):
             game_state.protected_player = target_id
 
         return game_state, None
@@ -381,14 +392,15 @@ class Slayer(BaseCharacter):
 
     def get_day_actions(
         self, game_state: "GameState", player: "Player"
-    ) -> List[str]:
+    ) -> Tuple[List[str], Optional[NumberedTargets]]:
         if player.ability_used:
-            return []
-        alive_names = [p.name for p in game_state.living_players() if p.id != player.id]
+            return [], None
+        alive = [p for p in game_state.living_players() if p.id != player.id]
+        numbered = NumberedTargets.from_players(alive)
         return [
-            "SLAY: <player> — Publicly choose a player; if they are the Demon, they die. "
-            f"(One-time use.) Targets: {', '.join(alive_names)}"
-        ]
+            f"SLAY: <number> — Publicly choose a player; if they are the Demon, they die. "
+            f"(One-time use.)\n{numbered.prompt_lines}"
+        ], numbered
 
     def resolve_slay(
         self,
@@ -423,16 +435,18 @@ class Ravenkeeper(BaseCharacter):
 
     def get_night_action_prompt(
         self, game_state: "GameState", player: "Player"
-    ) -> Optional[str]:
+    ) -> Optional[Tuple[str, NumberedTargets]]:
         if player.alive:
             return None
         if player.id not in game_state.night_deaths:
             return None
-        others = [p.name for p in game_state.players if p.id != player.id]
+        others = [p for p in game_state.players if p.id != player.id]
+        numbered = NumberedTargets.from_players(others)
         return (
             "You died tonight! Choose a player to learn their character.\n"
-            f"Players: {', '.join(others)}\n"
-            "FORMAT: RAVENKEEPER: <player>"
+            f"{numbered.prompt_lines}\n"
+            "FORMAT: RAVENKEEPER: <number>",
+            numbered,
         )
 
     def resolve_night_action(
@@ -445,7 +459,9 @@ class Ravenkeeper(BaseCharacter):
             return game_state, None
 
         target_id = action.get("target")
-        if not target_id:
+        if not target_id or str(target_id).strip().lower() in (
+            "none", "null", "pass", "no one", "nobody", "n/a",
+        ):
             return game_state, None
 
         is_poisoned = game_state.poisoned_player == player.id

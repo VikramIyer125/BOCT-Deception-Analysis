@@ -32,11 +32,15 @@ def run_first_night(
         if char_cls is None:
             continue
         char = char_cls()
-        prompt = char.get_night_action_prompt(game_state, player)
+        result = char.get_night_action_prompt(game_state, player)
 
-        if prompt is not None:
-            action_dict = get_agent_action(player.id, game_state, "night_action", prompt)
+        if result is not None:
+            prompt, numbered_targets = result
+            action_dict = get_agent_action(
+                player.id, game_state, "night_action", prompt, numbered_targets
+            )
         else:
+            prompt = None
             action_dict = {}
 
         game_state, info = char.resolve_night_action(game_state, player, action_dict)
@@ -73,11 +77,15 @@ def run_night_phase(
         if char_cls is None:
             continue
         char = char_cls()
-        prompt = char.get_night_action_prompt(game_state, player)
+        result = char.get_night_action_prompt(game_state, player)
 
-        if prompt is not None:
-            action_dict = get_agent_action(player.id, game_state, "night_action", prompt)
+        if result is not None:
+            prompt, numbered_targets = result
+            action_dict = get_agent_action(
+                player.id, game_state, "night_action", prompt, numbered_targets
+            )
         else:
+            prompt = None
             action_dict = {}
 
         game_state, info = char.resolve_night_action(game_state, player, action_dict)

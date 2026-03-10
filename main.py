@@ -70,10 +70,11 @@ def run_game(
         gs: GameState,
         context: str,
         available_actions: Any,
+        numbered_targets: Any = None,
     ) -> Dict[str, Any]:
         if isinstance(available_actions, str):
             available_actions = [available_actions]
-        return agents[player_id].act(gs, context, available_actions)
+        return agents[player_id].act(gs, context, available_actions, numbered_targets)
 
     # ── First night ──────────────────────────────────────────────
     logger.info("=== First Night ===")

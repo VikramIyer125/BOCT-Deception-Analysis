@@ -42,6 +42,7 @@ If you are evil, think about how to deceive. If you are good, think about who mi
 
 [Action]
 State your action clearly based on the available actions provided.
+When actions list numbered targets (e.g. "1. Alice", "2. Bob"), respond with the NUMBER of your choice, not the name (e.g. "KILL: 3" not "KILL: Charlie").
 
 IMPORTANT: Always follow this exact format. Your [Thinking Process] is private and other players cannot see it.\
 """

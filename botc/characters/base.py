@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from botc.game_state import AbilityInfo, GameState, Player
+    from botc.utils import NumberedTargets
 
 
 class CharacterType(Enum):
@@ -33,8 +34,8 @@ class BaseCharacter(ABC):
     @abstractmethod
     def get_night_action_prompt(
         self, game_state: GameState, player: Player
-    ) -> Optional[str]:
-        """Return action prompt string, or None if no action this night."""
+    ) -> Optional[Tuple[str, "NumberedTargets"]]:
+        """Return (prompt_string, numbered_targets) or None if no action this night."""
         ...
 
     @abstractmethod
@@ -49,8 +50,8 @@ class BaseCharacter(ABC):
 
     def get_day_actions(
         self, game_state: GameState, player: Player
-    ) -> List[str]:
-        return []
+    ) -> Tuple[List[str], Optional["NumberedTargets"]]:
+        return [], None
 
 
 CHARACTER_REGISTRY: Dict[str, type[BaseCharacter]] = {}

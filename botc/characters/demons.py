@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from botc.characters.base import BaseCharacter, CharacterType, register_character
+from botc.utils import NumberedTargets
 
 if TYPE_CHECKING:
     from botc.game_state import AbilityInfo, GameState, Player
@@ -22,15 +23,17 @@ class Imp(BaseCharacter):
 
     def get_night_action_prompt(
         self, game_state: "GameState", player: "Player"
-    ) -> Optional[str]:
+    ) -> Optional[Tuple[str, NumberedTargets]]:
         if game_state.day_number == 0:
             return None
-        targets = [p.name for p in game_state.living_players()]
+        targets = game_state.living_players()
+        numbered = NumberedTargets.from_players(targets)
         return (
             "Choose a player to kill tonight (you may choose yourself to "
             "pass the Demon role to your Minion).\n"
-            f"Alive players: {', '.join(targets)}\n"
-            "FORMAT: KILL: <player>"
+            f"{numbered.prompt_lines}\n"
+            "FORMAT: KILL: <number>",
+            numbered,
         )
 
     def resolve_night_action(
@@ -40,7 +43,9 @@ class Imp(BaseCharacter):
         action: Dict[str, Any],
     ) -> Tuple["GameState", Optional["AbilityInfo"]]:
         target_id = action.get("target")
-        if not target_id:
+        if not target_id or str(target_id).strip().lower() in (
+            "none", "null", "pass", "no one", "nobody", "n/a",
+        ):
             return game_state, None
 
         if target_id == game_state.protected_player:
