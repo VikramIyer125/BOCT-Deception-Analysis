@@ -26,13 +26,15 @@ def build_observation(game_state: "GameState", player: "Player") -> Dict[str, An
         ]
         obs["nominations_today"] = [
             {
-                "nominator": game_state.get_player(n.nominator_id).name,
-                "nominee": game_state.get_player(n.nominee_id).name,
+                "nominator": nominator.name,
+                "nominee": nominee.name,
                 "votes_for": len(n.votes_for),
                 "votes_against": len(n.votes_against),
                 "resolved": n.resolved,
             }
             for n in game_state.nominations
+            if (nominator := game_state.get_player_safe(n.nominator_id)) is not None
+            and (nominee := game_state.get_player_safe(n.nominee_id)) is not None
         ]
         obs["you_have_nominated_today"] = any(
             n.nominator_id == player.id for n in game_state.nominations

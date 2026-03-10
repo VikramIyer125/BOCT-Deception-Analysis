@@ -40,7 +40,7 @@ class MartianClient:
         system_prompt: str,
         user_prompt: str,
         temperature: float = 0.7,
-        max_tokens: int = 1024,
+        max_tokens: int = 4096,
     ) -> str:
         for attempt in range(self.max_retries):
             try:

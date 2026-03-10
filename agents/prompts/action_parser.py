@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import logging
+import random
 import re
 from dataclasses import dataclass, field
+from difflib import SequenceMatcher
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from botc.utils import NumberedTargets
+
+logger = logging.getLogger(__name__)
+
+FUZZY_THRESHOLD = 0.6
 
 
 @dataclass
@@ -52,12 +59,25 @@ def _clean_name(raw: str) -> str:
     return raw
 
 
+def _fuzzy_match(raw: str, name_to_id: dict[str, str]) -> str | None:
+    """Return the player ID whose name is closest to *raw*, or None."""
+    scored = [
+        (name, pid, SequenceMatcher(None, raw.lower(), name).ratio())
+        for name, pid in name_to_id.items()
+    ]
+    best_score = max((s for _, _, s in scored), default=0.0)
+    if best_score < FUZZY_THRESHOLD:
+        return None
+    ties = [pid for _, pid, s in scored if s == best_score]
+    return random.choice(ties)
+
+
 def _resolve_target(
     raw: str,
     name_to_id: dict[str, str],
     numbered_targets: Optional["NumberedTargets"] = None,
-) -> str:
-    """Resolve raw text to player ID. Tries number first, then name."""
+) -> str | None:
+    """Resolve raw text to player ID. Tries number, exact name, then fuzzy."""
     raw = _clean_name(_strip_rationale(raw).strip("\"'"))
     if numbered_targets and raw.isdigit():
         idx = int(raw)
@@ -65,7 +85,14 @@ def _resolve_target(
             return numbered_targets.id_map[idx]
     if raw.lower() in name_to_id:
         return name_to_id[raw.lower()]
-    return raw
+
+    fuzzy = _fuzzy_match(raw, name_to_id)
+    if fuzzy is not None:
+        logger.warning("Fuzzy-matched %r -> player %s", raw, fuzzy)
+        return fuzzy
+
+    logger.error("Could not resolve target %r to any player", raw)
+    return None
 
 
 def parse_night_action(
@@ -82,7 +109,7 @@ def parse_night_action(
         for p in game_state.players:  # type: ignore[attr-defined]
             name_to_id[p.name.lower()] = p.id
 
-    def _resolve(raw: str) -> str:
+    def _resolve(raw: str) -> str | None:
         return _resolve_target(raw, name_to_id, numbered_targets)
 
     patterns = [
@@ -98,7 +125,8 @@ def parse_night_action(
         if m:
             if key == "ft_targets":
                 parts = re.split(r"[,&]+", m.group(1))
-                result["targets"] = [_resolve(p) for p in parts[:2]]
+                resolved = [_resolve(p) for p in parts[:2]]
+                result["targets"] = [r for r in resolved if r is not None]
             elif key == "vote":
                 text_upper = action_text.upper()
                 result["vote"] = "YES" in text_upper
@@ -130,7 +158,7 @@ def parse_day_action(
         for p in game_state.players:  # type: ignore[attr-defined]
             name_to_id[p.name.lower()] = p.id
 
-    def _resolve(raw: str) -> str:
+    def _resolve(raw: str) -> str | None:
         return _resolve_target(raw, name_to_id, numbered_targets)
 
     slay_match = re.search(r"SLAY:\s*(.+)", action_text, re.IGNORECASE)
@@ -144,6 +172,10 @@ def parse_day_action(
     vote_match = re.search(r"\b(YES|NO)\b", action_text, re.IGNORECASE)
     if vote_match:
         result["vote"] = vote_match.group(1).upper() == "YES"
+    else:
+        numeric_vote = re.search(r"VOTE:\s*([12])", action_text, re.IGNORECASE)
+        if numeric_vote:
+            result["vote"] = numeric_vote.group(1) == "1"
 
     speak_match = re.search(r"SPEAK:\s*(.+)", action_text, re.DOTALL | re.IGNORECASE)
     if speak_match:

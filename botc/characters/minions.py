@@ -39,8 +39,12 @@ class Poisoner(BaseCharacter):
         action: Dict[str, Any],
     ) -> Tuple["GameState", Optional["AbilityInfo"]]:
         target_id = action.get("target")
-        if target_id and str(target_id).strip().lower() not in (
-            "none", "null", "pass", "no one", "nobody", "n/a",
+        if (
+            target_id
+            and str(target_id).strip().lower() not in (
+                "none", "null", "pass", "no one", "nobody", "n/a",
+            )
+            and game_state.get_player_safe(target_id) is not None
         ):
             game_state.poisoned_player = target_id
         return game_state, None

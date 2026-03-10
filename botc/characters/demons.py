@@ -51,7 +51,9 @@ class Imp(BaseCharacter):
         if target_id == game_state.protected_player:
             return game_state, None
 
-        target = game_state.get_player(target_id)
+        target = game_state.get_player_safe(target_id)
+        if target is None:
+            return game_state, None
 
         if target_id == player.id:
             return self._starpass(game_state, player)

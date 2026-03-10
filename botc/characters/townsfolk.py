@@ -356,6 +356,7 @@ class Monk(BaseCharacter):
                 "none", "null", "pass", "no one", "nobody", "n/a",
             )
             and not is_poisoned
+            and game_state.get_player_safe(target_id) is not None
         ):
             game_state.protected_player = target_id
 
@@ -465,7 +466,9 @@ class Ravenkeeper(BaseCharacter):
             return game_state, None
 
         is_poisoned = game_state.poisoned_player == player.id
-        target = game_state.get_player(target_id)
+        target = game_state.get_player_safe(target_id)
+        if target is None:
+            return game_state, None
 
         if is_poisoned:
             others = _other_players(game_state, player)

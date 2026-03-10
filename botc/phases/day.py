@@ -56,7 +56,7 @@ def run_day_phase(
                 )
 
             slay_target = action_dict.get("slay_target")
-            if slay_target:
+            if slay_target and game_state.get_player_safe(slay_target) is not None:
                 game_state = _resolve_slay(game_state, player, slay_target)
 
     # ── Dead player speeches (one statement each) ────────────────
@@ -123,13 +123,18 @@ def _run_nominations(
             [
                 "NOMINATE: <number> — Nominate a player for execution.",
                 "PASS — Do not nominate anyone.",
+                "ELIGIBLE PLAYERS (use ONLY these numbers, they change each turn):",
                 f"{numbered.prompt_lines}",
             ],
             numbered,
         )
 
         nominee_id = action_dict.get("nominate")
-        if nominee_id and nominee_id not in nominees_used:
+        if (
+            nominee_id
+            and nominee_id not in nominees_used
+            and game_state.get_player_safe(nominee_id) is not None
+        ):
             nom = Nomination(
                 id=str(uuid.uuid4()),
                 nominator_id=player.id,
@@ -159,15 +164,22 @@ def _run_voting(
             if not can_vote:
                 continue
 
+            vote_actions = [
+                f"VOTE on {nominator.name}'s nomination of {nominee.name}.",
+                "YES — Vote to execute.",
+                "NO — Vote against execution.",
+            ]
+            if not voter.alive:
+                vote_actions.insert(0,
+                    "You are DEAD but you still have your ONE ghost vote. "
+                    "You MUST vote YES or NO."
+                )
+
             action_dict = get_agent_action(
                 voter.id,
                 game_state,
                 f"day_{game_state.day_number}_vote",
-                [
-                    f"VOTE on {nominator.name}'s nomination of {nominee.name}.",
-                    "YES — Vote to execute.",
-                    "NO — Vote against execution.",
-                ],
+                vote_actions,
                 None,
             )
 

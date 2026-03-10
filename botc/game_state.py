@@ -90,6 +90,14 @@ class GameState(BaseModel):
                 return p
         raise ValueError(f"No player with id {player_id!r}")
 
+    def get_player_safe(self, player_id: str | None) -> Player | None:
+        if player_id is None:
+            return None
+        try:
+            return self.get_player(player_id)
+        except ValueError:
+            return None
+
     def living_players(self) -> List[Player]:
         return [p for p in self.players if p.alive]
 
