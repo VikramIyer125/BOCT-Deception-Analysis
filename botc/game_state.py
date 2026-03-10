@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -82,6 +83,10 @@ class GameState(BaseModel):
     def get_player(self, player_id: str) -> Player:
         for p in self.players:
             if p.id == player_id:
+                return p
+        cleaned = re.sub(r"[^a-zA-Z0-9 ]", "", player_id).strip().lower()
+        for p in self.players:
+            if p.id.lower() == cleaned or p.name.lower() == cleaned:
                 return p
         raise ValueError(f"No player with id {player_id!r}")
 

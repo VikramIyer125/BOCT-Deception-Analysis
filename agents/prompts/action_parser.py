@@ -41,6 +41,13 @@ def _strip_rationale(raw: str) -> str:
     return raw.strip()
 
 
+def _clean_name(raw: str) -> str:
+    """Strip markdown formatting, punctuation, and extra whitespace from a name."""
+    raw = re.sub(r"[*_`#~\[\](){}]", "", raw)
+    raw = raw.strip(" \t\n.,!?;:")
+    return raw
+
+
 def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
     """Extract structured data from the [Action] section for night actions."""
     action_text = action_text.strip()
@@ -52,7 +59,7 @@ def parse_night_action(action_text: str, game_state: "object" = None) -> dict:
             name_to_id[p.name.lower()] = p.id
 
     def _resolve(raw: str) -> str:
-        raw = _strip_rationale(raw).strip("\"'")
+        raw = _clean_name(_strip_rationale(raw).strip("\"'"))
         if raw.lower() in name_to_id:
             return name_to_id[raw.lower()]
         return raw
@@ -99,7 +106,7 @@ def parse_day_action(action_text: str, game_state: "object" = None) -> dict:
             name_to_id[p.name.lower()] = p.id
 
     def _resolve(raw: str) -> str:
-        raw = _strip_rationale(raw).strip("\"'")
+        raw = _clean_name(_strip_rationale(raw).strip("\"'"))
         if raw.lower() in name_to_id:
             return name_to_id[raw.lower()]
         return raw
